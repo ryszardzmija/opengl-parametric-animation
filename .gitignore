@@ -16,3 +16,7 @@ out/
 x64/
 Debug/
 Release/
+
+# Temporary build folders
+*.[0-9a-f]*/
+opengl-p.*/
