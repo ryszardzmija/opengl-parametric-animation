@@ -12,7 +12,7 @@ void printShaderLog(GLuint shader, std::ostream& os) {
 		char* log = new char[length];
 		glGetShaderInfoLog(shader, length, nullptr, log);
 		os << log;
-		delete log;
+		delete[] log;
 	}
 }
 
@@ -24,7 +24,7 @@ void printProgramLog(GLuint program, std::ostream& os) {
 		char* log = new char[length];
 		glGetProgramInfoLog(program, length, nullptr, log);
 		os << log;
-		delete log;
+		delete[] log;
 	}
 }
 
