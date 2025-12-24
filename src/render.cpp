@@ -23,7 +23,7 @@ Scene::~Scene() {
 	glDeleteVertexArrays(1, &vao_);
 }
 
-void Scene::draw(GLuint program, float dt) {
+void Scene::update(float dt) {
 	std::vector<glm::vec2> vertices;
 	for (auto& triangle : triangles_) {
 		auto positions = triangle.getNextPositions(dt);
@@ -32,8 +32,10 @@ void Scene::draw(GLuint program, float dt) {
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), vertices.data(), GL_DYNAMIC_DRAW);
+}
 
+void Scene::draw(GLuint program) {
 	glUseProgram(program);
 	glBindVertexArray(vao_);
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+	glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(triangles_.size() * 3));
 }

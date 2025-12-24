@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -6,46 +7,36 @@
 #include <glm/gtc/constants.hpp>
 
 #include "shaders.h"
-#include "curves.h"
+#include "render.h"
+#include "animation.h"
+#include "geometry.h"
 
-void init() {
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+RenderingProgram getRenderingProgram() {
+	constexpr const char* vertex_shader_path = "shaders/basic.vert";
+	constexpr const char* fragment_shader_path = "shaders/basic.frag";
+	return RenderingProgram(vertex_shader_path, fragment_shader_path);
 }
 
-void display(GLuint program) {
-	static GLuint apex_loc = glGetUniformLocation(program, "apex");
-	static GLuint base1_loc = glGetUniformLocation(program, "base1");
-	static GLuint base2_loc = glGetUniformLocation(program, "base2");
+Scene getScene() {
+	std::shared_ptr<const ClosedPlaneCurve> base_ellipse = std::make_shared<const Ellipse>(glm::vec2(0.0f, 0.0f), 0.25f, 0.125f);
+	std::shared_ptr<const ClosedPlaneCurve> apex_circle = std::make_shared<const Ellipse>(Ellipse::circle({ -0.25f, 0.0f }, 0.25f));
 
-	static ParametricEllipse base1_ellipse({ 0.0f, 0.0f }, 0.25f, 0.12f, 0.0f);
-	static ParametricEllipse base2_ellipse({ 0.0f, 0.0f }, 0.25f, 0.12f, glm::pi<float>());
-	static ParametricCircle apex_circle({ 0.0f, 0.0f }, 0.5f, glm::pi<float>() / 2);
+	ClosedPlaneCurvePoint base_1(base_ellipse, 0.0f, 0.25f);
+	ClosedPlaneCurvePoint base_2(base_ellipse, 0.5f, 0.25f);
+	ClosedPlaneCurvePoint apex(apex_circle, 0.0f, 0.125f);
 
-	constexpr float apex_inc = glm::radians<float>(2.0);
-	constexpr float base1_inc = glm::radians<float>(1.0);
-	constexpr float base2_inc = glm::radians<float>(1.0);
+	AnimatedTriangle triangle({ base_1, base_2, apex });
 
+	return Scene({ triangle });
+}
+
+void display(GLuint program, Scene& scene, float dt) {
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glUseProgram(program);
-
-	base1_ellipse.addIncrement(base1_inc);
-	base2_ellipse.addIncrement(base2_inc);
-	apex_circle.addIncrement(apex_inc);
-
-	glm::vec2 base1_position = base1_ellipse.getCartesian();
-	glm::vec2 base2_position = base2_ellipse.getCartesian();
-	glm::vec2 apex_position = apex_circle.getCartesian();
-
-	glProgramUniform2f(program, base1_loc, base1_position.x, base1_position.y);
-	glProgramUniform2f(program, base2_loc, base2_position.x, base2_position.y);
-	glProgramUniform2f(program, apex_loc, apex_position.x, apex_position.y);
-
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	scene.update(dt);
+	scene.draw(program);
 }
 
 int main() {
@@ -68,14 +59,14 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-	constexpr const char* vertex_shader_path = "shaders/basic.vert";
-	constexpr const char* fragment_shader_path = "shaders/basic.frag";
-	RenderingProgram rendering_program(vertex_shader_path, fragment_shader_path);
+	RenderingProgram rendering_program = getRenderingProgram();
+	Scene scene = getScene();
 
-	init();
-
+	double last_frame_time = glfwGetTime();
 	while (!glfwWindowShouldClose(window)) {
-		display(rendering_program.getProgram());
+		float dt = static_cast<float>(glfwGetTime() - last_frame_time);
+		last_frame_time += dt;
+		display(rendering_program.getProgram(), scene, dt);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

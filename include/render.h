@@ -16,7 +16,8 @@ public:
 
 	~Scene();
 
-	void draw(GLuint program, float dt);
+	void update(float dt);
+	void draw(GLuint program);
 
 private:
 	std::vector<AnimatedTriangle> triangles_;
